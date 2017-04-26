@@ -70,7 +70,7 @@ namespace :roomer do
     end
 
     desc "Updates tenanted SQL Views."
-    task :sqlviews => :environment do      
+    task :sqlviews => :environment do  
       Roomer.tenant_model.all.each do |tenant|
         ensuring_tenant(tenant) do
           Dir["#{Rails.root}/db/sqlviews/tenanted/*.sql"].each do |file|
@@ -137,13 +137,12 @@ namespace :roomer do
   
   desc "Runs shared and tenanted migrations"
   task :migrate do
+    Rake::Task["roomer:tenanted:sqlviews"].invoke
     if ENV["VERSION"].blank?
       Rake::Task["roomer:shared:migrate"].invoke
       Rake::Task["roomer:tenanted:migrate"].invoke
-      Rake::Task["roomer:tenanted:sqlviews"].invoke
     else
       Rake::Task["roomer:tenanted:migrate"].invoke
-      Rake::Task["roomer:tenanted:sqlviews"].invoke
       Rake::Task["roomer:shared:migrate"].invoke
     end
   end
