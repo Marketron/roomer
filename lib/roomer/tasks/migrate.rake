@@ -8,7 +8,8 @@ namespace :roomer do
     task :migrate => :environment do
       version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
       ensuring_schema_and_search_path(Roomer.shared_schema_name) do
-        ActiveRecord::Migrator.migrate(Roomer.shared_migrations_directory, version)
+        #ActiveRecord::Migrator.migrate(Roomer.shared_migrations_directory, version)
+        ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory).migrate
       end
       Roomer::Schema.dump(:shared)
     end
@@ -31,7 +32,8 @@ namespace :roomer do
     task :rollback => :environment do
       step = ENV['STEP'] ? ENV['STEP'].to_i : 1
       ensuring_schema_and_search_path(Roomer.shared_schema_name) do
-        ActiveRecord::Migrator.rollback(Roomer.shared_migrations_directory, step)
+        #ActiveRecord::Migrator.rollback(Roomer.shared_migrations_directory, step)
+        ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory).rollback(step)
       end
       Roomer::Schema.dump(:shared)
     end
@@ -63,7 +65,8 @@ namespace :roomer do
       version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
       Roomer.tenant_model.all.each do |tenant|
         ensuring_tenant(tenant) do
-          ActiveRecord::Migrator.migrate(Roomer.tenanted_migrations_directory, version)
+          #ActiveRecord::Migrator.migrate(Roomer.tenanted_migrations_directory, version)
+          ActiveRecord::MigrationContext.new(Roomer.tenanted_migrations_directory).migrate
         end
       end
       Roomer::Schema.dump(:tenanted)
@@ -75,7 +78,8 @@ namespace :roomer do
       Roomer.tenant_model.all.each do |tenant|
         ensuring_tenant(tenant) do
           ActiveRecord::Base.connection.schema_search_path = "#{tenant.schema_name},#{Roomer.shared_schema_name}"
-          ActiveRecord::Migrator.rollback(Roomer.tenanted_migrations_directory, step)
+          #ActiveRecord::Migrator.rollback(Roomer.tenanted_migrations_directory, step)
+          ActiveRecord::MigrationContext.new(Roomer.tenanted_migrations_directory).rollback(step)
         end
       end
       Roomer::Schema.dump(:tenanted)
