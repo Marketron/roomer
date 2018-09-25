@@ -3,18 +3,19 @@ module Roomer
 
     def dump(stream)
       header(stream)
+      extensions(stream)
       tables(stream)
       views(stream)
       trailer(stream)
       stream
-    end 
+    end
 
     protected
     def header(stream)
       define_params = @version ? ":version => #{@version}" : ""
       stream.puts <<HEADER
 # It's strongly recommended to check this file into your version control system.
-    
+
 Roomer::Schema.define(#{define_params}) do
 
 HEADER
