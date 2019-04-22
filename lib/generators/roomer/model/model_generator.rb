@@ -40,6 +40,10 @@ CONTENT
         migration_template "migration.rb", "#{migration_dir}/roomer_create_#{table_name}"
       end
 
+      def self.next_migration_number(dir)
+        Time.now.utc.strftime("%Y%m%d%H%M%S")
+      end
+
     end
   end
 end
