@@ -33,6 +33,11 @@ CONTENT
         migration_template "global_migration.rb", "#{Roomer.shared_migrations_directory}/roomer_create_#{Roomer.tenants_table.to_s}"
       end
 
+      # creates a generic migration number when running setup for the first time
+      def self.next_migration_number(dir)
+        Time.now.utc.strftime("%Y%m%d%H%M%S")
+      end
+
    end
   end
 end
