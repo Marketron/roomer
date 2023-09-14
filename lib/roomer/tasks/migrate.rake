@@ -26,9 +26,14 @@ namespace :roomer do
 
     # copied from https://github.com/rails/rails/blob/master/activerecord/lib/active_record/railties/databases.rake
     task :abort_if_pending_migrations => :environment do
-      ensuring_schema_and_search_path(Roomer.shared_schema_name) do
+      ensuring_schema_and_search_path(Roomer.shared_schema_name) do        
         mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, ActiveRecord::SchemaMigration)
-        pending_migrations = ActiveRecord::Migrator.new(:up, mc.migrations, nil).pending_migrations
+        pending_migrations = ActiveRecord::Base.configurations.configs_for(env_name: ActiveRecord::Tasks::DatabaseTasks.env).flat_map do |db_config|
+          ActiveRecord::Base.establish_connection(db_config.config)
+          mc.open.pending_migrations
+        end
+        
+        
         if pending_migrations.any?
           puts "You have #{pending_migrations.size} pending migrations:"
           pending_migrations.each do |pending_migration|
