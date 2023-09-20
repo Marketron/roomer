@@ -143,9 +143,10 @@ module Roomer
         sm_table = quote_table_name(ActiveRecord::SchemaMigration.table_name)
 
         migrated = ActiveRecord::SchemaMigration.all_versions.map(&:to_i)
-        versions = ActiveRecord::MigrationContext.new(migrations_paths, ActiveRecord::SchemaMigration, ActiveRecord::SchemaMigration).migration_files.map do |file|
-          migration_context.parse_migration_filename(file).first.to_i
-        end
+        versions = migration_context.migrations.map(&:version)
+        # versions = ActiveRecord::MigrationContext.new(migrations_paths, ActiveRecord::SchemaMigration).migrations.map do |file|
+        #   migration_context.parse_migration_filename(file).first.to_i
+        # end
 
         unless migrated.include?(version)
           execute "INSERT INTO #{sm_table} (version) VALUES (#{quote(version)})"

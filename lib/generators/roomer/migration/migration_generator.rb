@@ -28,7 +28,7 @@ module Roomer
         set_local_assigns!
         # migration_template "migration.rb", "#{migration_dir}/roomer_#{file_name}"
         # had to append the .rb for rails 4.0
-        migration_template "migration.rb", "#{migration_dir.first}/roomer_#{file_name}.rb"
+        migration_template "migration.rb", "#{migration_dir}/roomer_#{file_name}.rb"
       end
 
       protected
