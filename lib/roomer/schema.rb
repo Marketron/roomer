@@ -57,7 +57,7 @@ module Roomer
     def self.define(info={}, &block)
       instance_eval(&block)
       unless info[:version].blank?
-        ActiveRecord::Base.connection.assume_migrated_upto_version(info[:version], migrations_path)
+        ActiveRecord::Base.connection.assume_migrated_upto_version(info[:version])
       end
     end
 
