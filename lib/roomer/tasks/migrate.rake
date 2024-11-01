@@ -29,7 +29,7 @@ namespace :roomer do
       ensuring_schema_and_search_path(Roomer.shared_schema_name) do        
         mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, ActiveRecord::SchemaMigration)
         pending_migrations = ActiveRecord::Base.configurations.configs_for(env_name: ActiveRecord::Tasks::DatabaseTasks.env).flat_map do |db_config|
-          ActiveRecord::Base.establish_connection(db_config.config)
+          ActiveRecord::Base.establish_connection(db_config)
           mc.open.pending_migrations
         end
         

@@ -18,7 +18,7 @@ module Roomer
           ['up', version, '********** NO FILE **********']
         end
         # output
-        puts "\ndatabase: #{ActiveRecord::Base.connection_config[:database]}"
+        puts "\ndatabase: #{ActiveRecord::Base.connection_db_config.configuration_hash[:database]}"
         puts "\nschema: #{schema_name}\n\n"
         puts "#{'Status'.center(8)}  #{'Migration ID'.ljust(14)}  Migration Name"
         puts "-" * 50
