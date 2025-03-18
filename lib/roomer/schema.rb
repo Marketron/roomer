@@ -31,7 +31,7 @@ module Roomer
             schema_name = Tenant.first.schema_name.to_s
             filename = Roomer.tenanted_schema_filename
         end
-        FileUtils.mkdir_p(Roomer.schemas_directory) unless File.exists?(Roomer.schemas_directory)
+        FileUtils.mkdir_p(Roomer.schemas_directory) unless File.exist?(Roomer.schemas_directory)
         filepath = File.expand_path(File.join(Roomer.schemas_directory, filename))
         ActiveRecord::Base.connection.schema_search_path = schema_name
         Roomer::SchemaDumper.dump(ActiveRecord::Base.connection, File.new(filepath, "w"))
@@ -48,7 +48,7 @@ module Roomer
           end
         end
         filepath = File.expand_path(File.join(Roomer.schemas_directory, filename))
-        return unless File.exists?(filepath)
+        return unless File.exist?(filepath)
         # Object.load(filepath)
         Object.send(:load, filepath)
       end
