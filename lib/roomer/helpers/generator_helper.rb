@@ -5,7 +5,7 @@ module Roomer
       # Check to see if the model file exists, should be used in a Generator
       # @return [True,False] 
       def model_exists?
-        File.exists?(File.join(destination_root, model_path))
+        File.exist?(File.join(destination_root, model_path))
       end
 
       # Returns the path of the model
