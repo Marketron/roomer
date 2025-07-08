@@ -115,7 +115,7 @@ module Roomer
         old_search_path = ActiveRecord::Base.connection.schema_search_path
         old_search_path.split(",").each do |search_path|
           ActiveRecord::Base.connection.schema_search_path = search_path
-          ActiveRecord::SchemaMigration.create_table
+          ActiveRecord::Base.connection.schema_migration.create_table
 
         end
         ActiveRecord::Base.connection.schema_search_path = old_search_path
@@ -139,9 +139,9 @@ module Roomer
 
       def assume_migrated_upto_version(version)
         version = version.to_i
-        sm_table = quote_table_name(ActiveRecord::SchemaMigration.table_name)
+        sm_table = quote_table_name(ActiveRecord::Base.connection.schema_migration.table_name)
 
-        migrated = ActiveRecord::SchemaMigration.all_versions.map(&:to_i)
+        migrated = ActiveRecord::Base.connection.schema_migration.versions.map(&:to_i)
         versions = migration_context.migrations.map(&:version)
 
         unless migrated.include?(version)
