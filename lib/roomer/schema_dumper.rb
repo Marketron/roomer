@@ -24,6 +24,7 @@ module Roomer
       extensions(stream)
       tables(stream)
       views(stream)
+      triggers(stream)
       trailer(stream)
       stream
     end
@@ -64,6 +65,47 @@ VIEWS
 VIEWS
         end
       end
+    end
+
+    def triggers(stream)
+      stream.puts <<TRIGGERS
+  # Database Triggers
+  # The following statements persist database triggers across tenants
+
+TRIGGERS
+      current_schema = @connection.schema_search_path
+      @connection.schema_search_path = "public"
+      triggers = @connection.select_all(%{
+        SELECT
+          n.nspname AS function_schema,
+          p.proname AS function_name,
+          l.lanname AS function_language,
+          CASE
+            WHEN l.lanname = 'internal'
+              THEN p.prosrc
+            ELSE pg_get_functiondef(p.oid)
+          END AS definition,
+          pg_get_function_arguments(p.oid) AS function_arguments,
+          t.typname AS return_type
+        FROM
+          pg_proc p
+          LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+          LEFT JOIN pg_language l ON p.prolang = l.oid
+          LEFT JOIN pg_type t ON t.oid = p.prorettype
+        WHERE
+          n.nspname = '#{current_schema}'
+        AND CASE WHEN l.lanname = 'internal' THEN p.prosrc ELSE pg_get_functiondef(p.oid) END iLIKE '%trigger%';
+      })
+      # Reinstating previous search path to make sure nothing breaks
+      @connection.schema_search_path = current_schema
+      unless triggers.empty?
+        triggers.each do |trigger|
+          stream.puts <<TRIGGERS
+  execute("#{trigger['definition'].gsub(/#{current_schema}\./, '#{ActiveRecord::Base.table_name_prefix}')}")
+TRIGGERS
+        end
+      end
+      
     end
 
     #Extensions to deal new postgres functionality
