@@ -5,7 +5,8 @@ module Roomer
 
       # copied from https://github.com/rails/rails/blob/master/activerecord/lib/active_record/railties/databases.rake
       def status(schema_name,migrations_directory)
-        db_list = ActiveRecord::Base.connection.select_values("SELECT version FROM #{ActiveRecord::Base.connection.schema_migration.table_name}")
+        schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+        db_list = ActiveRecord::Base.connection.select_values("SELECT version FROM #{schema_migration.table_name}")
         db_list.map! { |version| "%.3d" % version }
         file_list = []
         Dir.foreach(migrations_directory) do |file|

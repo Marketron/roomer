@@ -115,8 +115,8 @@ module Roomer
         old_search_path = ActiveRecord::Base.connection.schema_search_path
         old_search_path.split(",").each do |search_path|
           ActiveRecord::Base.connection.schema_search_path = search_path
-          ActiveRecord::Base.connection.schema_migration.create_table
-
+          schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+          schema_migration.create_table
         end
         ActiveRecord::Base.connection.schema_search_path = old_search_path
       end
@@ -136,12 +136,14 @@ module Roomer
           WHERE  schemaname = '#{schema_name}';
         })
       end
-
+      
+      
       def assume_migrated_upto_version(version)
         version = version.to_i
-        sm_table = quote_table_name(ActiveRecord::Base.connection.schema_migration.table_name)
+        sm_table = quote_table_name(pool.schema_migration.table_name)
 
-        migrated = ActiveRecord::Base.connection.schema_migration.versions.map(&:to_i)
+        migration_context = pool.migration_context
+        migrated = migration_context.get_all_versions
         versions = migration_context.migrations.map(&:version)
 
         unless migrated.include?(version)
@@ -156,6 +158,28 @@ module Roomer
           execute insert_versions_sql(inserting)
         end
       end
+
+      # def assume_migrated_upto_version(version)
+      #   version = version.to_i
+      #   schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+      #   sm_table = quote_table_name(schema_migration.table_name)
+      #
+      #
+      #   migrated = schema_migration.versions.map(&:to_i)
+      #   versions = migration_context.migrations.map(&:version)
+      #
+      #   unless migrated.include?(version)
+      #     execute "INSERT INTO #{sm_table} (version) VALUES (#{quote(version)})"
+      #   end
+      #
+      #   inserting = (versions - migrated).select { |v| v < version }
+      #   if inserting.any?
+      #     if (duplicate = inserting.detect { |v| inserting.count(v) > 1 })
+      #       raise "Duplicate migration #{duplicate}. Please renumber your migrations to resolve the conflict."
+      #     end
+      #     execute insert_versions_sql(inserting)
+      #   end
+      # end
 
     end
   end

@@ -8,7 +8,8 @@ namespace :roomer do
     task :migrate => :environment do
       version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
       ensuring_schema_and_search_path(Roomer.shared_schema_name) do
-        mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, ActiveRecord::Base.connection.schema_migration)
+        schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+        mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, schema_migration)
         mc.migrate(version)
       end
       Roomer::Schema.dump(:shared)
@@ -18,7 +19,8 @@ namespace :roomer do
     task :rollback => :environment do
       step = ENV['STEP'] ? ENV['STEP'].to_i : 1
       ensuring_schema_and_search_path(Roomer.shared_schema_name) do
-        mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, ActiveRecord::Base.connection.schema_migration)
+        schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+        mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, schema_migration)
         mc.rollback(step)
       end
       Roomer::Schema.dump(:shared)
@@ -27,7 +29,8 @@ namespace :roomer do
     # copied from https://github.com/rails/rails/blob/master/activerecord/lib/active_record/railties/databases.rake
     task :abort_if_pending_migrations => :environment do
       ensuring_schema_and_search_path(Roomer.shared_schema_name) do        
-        mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, ActiveRecord::Base.connection.schema_migration)
+        schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+        mc = ActiveRecord::MigrationContext.new(Roomer.shared_migrations_directory, schema_migration)
         pending_migrations = ActiveRecord::Base.configurations.configs_for(env_name: ActiveRecord::Tasks::DatabaseTasks.env).flat_map do |db_config|
           ActiveRecord::Base.establish_connection(db_config)
           mc.open.pending_migrations
@@ -71,7 +74,8 @@ namespace :roomer do
       Roomer.tenant_model.all.each do |tenant|
         puts "*** Migrating Tenant: #{tenant.schema_name} ***"
         ensuring_tenant(tenant) do
-          mc = ActiveRecord::MigrationContext.new(Roomer.tenanted_migrations_directory, ActiveRecord::Base.connection.schema_migration)
+          schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+          mc = ActiveRecord::MigrationContext.new(Roomer.tenanted_migrations_directory, schema_migration)
           mc.migrate(version)
         end
       end
@@ -83,7 +87,8 @@ namespace :roomer do
       step = ENV['STEP'] ? ENV['STEP'].to_i : 1
       Roomer.tenant_model.all.each do |tenant|
         ensuring_tenant(tenant) do
-          mc = ActiveRecord::MigrationContext.new(Roomer.tenanted_migrations_directory, ActiveRecord::Base.connection.schema_migration)
+          schema_migration = ActiveRecord::SchemaMigration.new(ActiveRecord::Base.connection_pool)
+          mc = ActiveRecord::MigrationContext.new(Roomer.tenanted_migrations_directory, schema_migration)
           mc.rollback(step)
         end
       end
