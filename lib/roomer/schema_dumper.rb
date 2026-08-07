@@ -3,6 +3,12 @@
 module Roomer
   class SchemaDumper < ActiveRecord::ConnectionAdapters::SchemaDumper
 
+    # Placeholder swapped into raw SQL before it's turned into a Ruby string
+    # literal, then restored afterwards as a live #{} interpolation. Keeps
+    # ActiveRecord::Base.table_name_prefix resolved at *load* time (when the
+    # dumped file runs) rather than baked in as a fixed value at dump time.
+    TABLE_NAME_PREFIX_MARKER = "__ROOMER_TABLE_NAME_PREFIX__"
+
     class << self
       def dump(connection = ActiveRecord::Base.connection, stream = STDOUT, config = ActiveRecord::Base)
         create(connection, generate_options(config)).dump(stream)
@@ -60,9 +66,9 @@ VIEWS
       @connection.schema_search_path = current_schema
       unless views.empty?
         views.each do |view|
-          stream.puts <<VIEWS
-  execute("CREATE OR REPLACE VIEW \#{ActiveRecord::Base.table_name_prefix}#{view['viewname']} AS #{view['definition'].gsub(/#{current_schema}\./, '#{ActiveRecord::Base.table_name_prefix}')}")
-VIEWS
+          definition = view['definition'].gsub(/#{Regexp.escape(current_schema)}\./, TABLE_NAME_PREFIX_MARKER)
+          sql = "CREATE OR REPLACE VIEW #{TABLE_NAME_PREFIX_MARKER}#{view['viewname']} AS #{definition}"
+          stream.puts "  execute(#{ruby_literal_with_deferred_prefix(sql)})"
         end
       end
     end
@@ -100,12 +106,20 @@ TRIGGERS
       @connection.schema_search_path = current_schema
       unless triggers.empty?
         triggers.each do |trigger|
-          stream.puts <<TRIGGERS
-  execute("#{trigger['definition'].gsub(/#{current_schema}\./, '#{ActiveRecord::Base.table_name_prefix}')}")
-TRIGGERS
+          definition = trigger['definition'].gsub(/#{Regexp.escape(current_schema)}\./, TABLE_NAME_PREFIX_MARKER)
+          stream.puts "  execute(#{ruby_literal_with_deferred_prefix(definition)})"
         end
       end
-      
+
+    end
+
+    # Turns raw SQL into a safely-escaped Ruby string literal, preserving any
+    # TABLE_NAME_PREFIX_MARKER occurrences as a live #{} interpolation so the
+    # dumped file re-evaluates table_name_prefix when it's loaded, instead of
+    # embedding raw SQL text (which can contain unescaped quotes) directly
+    # inside a hand-rolled double-quoted string.
+    def ruby_literal_with_deferred_prefix(sql)
+      sql.inspect.gsub(TABLE_NAME_PREFIX_MARKER, '#{ActiveRecord::Base.table_name_prefix}')
     end
 
     #Extensions to deal new postgres functionality
